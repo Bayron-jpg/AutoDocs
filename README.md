@@ -1,6 +1,6 @@
 # AutoDocs
-* Aplicación para automatizar la creación de documentos Word repetitivos.
-* Proyecto personal desarrollado con Python y CustomTkinter
+Aplicación para automatizar la creación de documentos Word repetitivos.
+Proyecto personal desarrollado con Python y CustomTkinter.
 
 ## Tecnologías
 | Dependencia | Uso |
