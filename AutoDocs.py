@@ -1,6 +1,8 @@
 import os
-from tkinter import messagebox
+import threading
 import customtkinter
+from tkinter import filedialog, messagebox
+import docx2pdf
 
 # ------------------ Configuración General ------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -170,24 +172,26 @@ def crearPlantilla():
         
 def convertirPdf():
     # --- Posiciones ---
-    POS_TITULO = (0.39, 0.05)
-    POS_TEXTOACERCADE = (0.07, 0.21)
+    POS_TITULO = (0.15, 0.09)
+    POS_ARCHIVO = (0.40, 0.41)
     POS_VOLVER = (0.43, 0.83)
+    POS_SELECCIONAR = (0.19, 0.41)
+    POS_CONVERTIR = (0.41, 0.56)
     
     global ventana_pdf
 
     if ventana_pdf is None or not ventana_pdf.winfo_exists():
         # ------ Crear y ajustar ventana ------
         ventana_pdf = customtkinter.CTkToplevel(app)
-        ventana_pdf.transient(app)              # Vincula a la ventana principal
-        ventana_pdf.grab_set()                  # Impide interactuar con la principal
-        ventana_pdf.focus_force()               # Le da foco inmediatamente
-        ventana_pdf.title("Convirtiendo a PDF") # Cambiar el titulo superior de la ventana   
-        ventana_pdf.resizable(False, False)     # Impide agrandar o achicar la ventana
+        ventana_pdf.transient(app)                             # Vincula a la ventana principal
+        ventana_pdf.grab_set()                                 # Impide interactuar con la principal
+        ventana_pdf.focus_force()                              # Le da foco inmediatamente
+        ventana_pdf.title("Convirtiendo Documento Word a PDF") # Cambiar el titulo superior de la ventana   
+        ventana_pdf.resizable(False, False)                    # Impide agrandar o achicar la ventana
 
         # Ajustes de la ventana
-        ancho = 1000
-        alto = 600
+        ancho = 800
+        alto = 500
         x = app.winfo_x() + (app.winfo_width() - ancho) // 2
         y = app.winfo_y() + (app.winfo_height() - alto) // 2
         ventana_pdf.geometry(f"{ancho}x{alto}+{x}+{y}")
@@ -198,16 +202,77 @@ def convertirPdf():
         # Obtener el modo actual (Claro/Oscuro)
         icono = ICON_DARK if customtkinter.get_appearance_mode() == "Dark" else ICON_LIGHT
         ventana_pdf.after(200, lambda: ventana_pdf.iconbitmap(icono)) # Espera 200ms para cambiar el icono
+
+        # --- Título ---
+        titulo = crearTexto(ventana_pdf, "Convertir Documento Word a PDF", "Consolas", 34)
+        titulo.place(relx=POS_TITULO[0], rely=POS_TITULO[1])
+
+        # --- Archivo seleccionado ---
+        archivoSeleccionado = crearTexto(ventana_pdf, "Ningún archivo seleccionado", "Consolas", 12)
+        archivoSeleccionado.place(relx=POS_ARCHIVO[0], rely=POS_ARCHIVO[1])
+
+        # --- Función seleccionar archivo ---
+        def seleccionarArchivo():
+            archivo = filedialog.askopenfilename(
+                title="Seleccionar documento Word",
+                filetypes=[("Documentos Word", "*.docx *.doc")]
+            )
+            if archivo:
+                archivoSeleccionado.configure(text=os.path.basename(archivo))
+                botonConvertir.configure(state="normal")
+                botonConvertir.archivo_path = archivo
+
+        # --- Función convertir ---
+        def convertir():
+            archivo = botonConvertir.archivo_path
+    
+            # Deshabilitar botones mientras convierte
+            botonConvertir.configure(state="disabled", text="Convirtiendo...")
+            botonSeleccionar.configure(state="disabled")
+    
+            def proceso():
+                try:
+                    docx2pdf.convert(archivo)
+                    ruta_pdf = os.path.splitext(archivo)[0] + ".pdf"
+                    ventana_pdf.after(0, lambda: exito(ruta_pdf))
+                except Exception as e:
+                    ventana_pdf.after(0, lambda: error(str(e)))
+    
+            def exito(ruta):
+                botonConvertir.configure(state="disabled", text="Convertir a PDF")  # Deshabilitar y resetear texto
+                botonSeleccionar.configure(state="normal")
+                archivoSeleccionado.configure(text="Ningún archivo seleccionado")    # Vaciar label
+                messagebox.showinfo("PDF Generado satisfactoriamente", f"PDF generado correctamente.\n\nGuardado en:\n{ruta}")
+
+            def error(e):
+                botonConvertir.configure(state="normal", text="Convertir a PDF")
+                botonSeleccionar.configure(state="normal")
+                messagebox.showerror("Error", f"No se pudo convertir:\n{e}")
+
+            threading.Thread(target=proceso, daemon=True).start()
+
+        # --- Botón seleccionar ---
+        botonSeleccionar = customtkinter.CTkButton(ventana_pdf,
+            text="Seleccionar archivo",
+            command=seleccionarArchivo,
+            fg_color=("#cecece","gray"),
+            hover_color=("#c0c0c0","#666666"),
+            text_color=("black","white"),
+            height=35)
+        botonSeleccionar.place(relx=POS_SELECCIONAR[0], rely=POS_SELECCIONAR[1])
+
+        # --- Botón convertir (deshabilitado hasta seleccionar archivo) ---
+        botonConvertir = customtkinter.CTkButton(ventana_pdf,
+            text="Convertir a PDF",
+            command=convertir,
+            fg_color="#e05a2b",
+            hover_color="#b84a20",
+            text_color="white",
+            height=35,
+            state="disabled")
+        botonConvertir.place(relx=POS_CONVERTIR[0], rely=POS_CONVERTIR[1])
         
-        autoDocs = crearTexto(ventana_pdf, "Convertir a PDF", "Consolas", 28)
-        autoDocs.place(relx=POS_TITULO[0], rely=POS_TITULO[1])
         
-        texto = customtkinter.CTkLabel(
-            ventana_pdf,
-            text="Ventana de Convertir a PDF",
-            font=("Consolas", 16), # Tamaño y tipo de letra
-            justify="left")        # Alineamiento del texto a la izquierda
-        texto.place(relx=POS_TEXTOACERCADE[0], rely=POS_TEXTOACERCADE[1])
         
         botonVolver = customtkinter.CTkButton(ventana_pdf,
                 text="Volver",               # Título de la ventana
@@ -224,7 +289,6 @@ def convertirPdf():
 def acercaDe():
     # --- Posiciones ---
     POS_AUTODOCS = (0.35, 0.03)
-    POS_SUBTITULO = (0.35, 0.09)
     POS_TEXTOACERCADE = (0.07, 0.21)
     POS_SALIR = (0.32, 0.83)
     
