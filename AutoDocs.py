@@ -128,7 +128,7 @@ def menu():
 def crearPlantilla():
     # --- Posiciones ---
     POS_TITULO = (0.22, 0.05)
-    POS_TEXTOACERCADE = (0.07, 0.21)
+    POS_GENERARPLANTILLA = (0.07, 0.21)
     POS_VOLVER = (0.41, 0.83)
     
     global ventana_plantilla
@@ -160,15 +160,17 @@ def crearPlantilla():
         autoDocs = crearTexto(ventana_plantilla, "Crear Plantilla de Documentos", "Consolas", 28)
         autoDocs.place(relx=POS_TITULO[0], rely=POS_TITULO[1])
         
-        texto = customtkinter.CTkLabel(
-            ventana_plantilla,
-            text="Ventana de plantilla",
-            font=("Consolas", 16), # Tamaño y tipo de letra
-            justify="left")        # Alineamiento del texto a la izquierda
-        texto.place(relx=POS_TEXTOACERCADE[0], rely=POS_TEXTOACERCADE[1])
+        botonGenerarDoc = customtkinter.CTkButton(ventana_plantilla,
+                text="Generar Plantilla",          # Nombre del botón
+                command=None,                      # Función a ejecutar
+                fg_color="#437791",              # Color del botón
+                hover_color="#386379",           # Color sobre el mouse
+                text_color="white",                # Color del texto
+                height=35)                         # Alto del botón
+        botonGenerarDoc.place(relx=POS_GENERARPLANTILLA[0], rely=POS_GENERARPLANTILLA[1])
         
         botonVolver = customtkinter.CTkButton(ventana_plantilla,
-                text="Volver",                     # Título de la ventana
+                text="Volver",                     # Nombre del botón
                 command=ventana_plantilla.destroy, # Función a ejecutar
                 fg_color="#ba6258",              # Color del botón
                 hover_color="#7f342d",           # Color sobre el mouse
@@ -299,7 +301,7 @@ def convertirPdf():
 def acercaDe():
     # --- Posiciones ---
     POS_AUTODOCS = (0.35, 0.03)
-    POS_TEXTOACERCADE = (0.07, 0.21)
+    POS_GENERARPLANTILLA = (0.07, 0.21)
     POS_SALIR = (0.32, 0.83)
     
     global ventana_acerca
@@ -342,7 +344,7 @@ def acercaDe():
                 "© 2026",
             font=("Consolas", 16), # Tamaño y tipo de letra
             justify="left")        # Alineamiento del texto a la izquierda
-        texto.place(relx=POS_TEXTOACERCADE[0], rely=POS_TEXTOACERCADE[1])
+        texto.place(relx=POS_GENERARPLANTILLA[0], rely=POS_GENERARPLANTILLA[1])
         
         botonSalir = customtkinter.CTkButton(ventana_acerca,
                 text="Volver",                  # Título de la ventana
