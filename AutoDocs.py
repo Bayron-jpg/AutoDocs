@@ -3,8 +3,13 @@ from pydoc import doc
 import threading
 import customtkinter
 from tkinter import filedialog, messagebox
-from docx import Document
 import docx2pdf
+from docx import Document
+from docx.oxml.ns import qn
+from docx.shared import Inches
+from docx.oxml import OxmlElement
+from docx.shared import Pt, RGBColor
+from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # ------------------ Configuración General ------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -146,7 +151,49 @@ def crearPlantilla():
     POS_SECCION = (0.66, 0.41)
 
     global ventana_plantilla
+    
+    def verificar_largo(texto_futuro):
+        LIMITE = 60
+        # Retorna True si el texto resultante mide LIMITE o menos, de lo contrario lo bloquea (False)
+        return len(texto_futuro) <= LIMITE
+    
+    def generarDoc(tituloDoc):
+        textoTitulo = tituloDoc.get().strip()
+        if not textoTitulo:
+            messagebox.showwarning("Campo vacío", "Por favor, escriba un título antes de generar el documento.")
+            return
+        
+        ruta = os.path.join(BASE_DIR, "Documento.docx")
+        doc = Document()
 
+        # === Título ===
+        titulo = doc.add_heading(textoTitulo, level=0) 
+        titulo.paragraph_format.space_before = Pt(150)
+        
+        run = titulo.runs[0]
+        run.font.name = "Arial"
+        run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
+        
+        # Tamaño y color del título
+        run.font.size = Pt(52)
+        run.font.color.rgb = RGBColor(0, 0, 0)
+        titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        
+        # Borrar línea bajo el título
+        pPr = titulo._element.get_or_add_pPr()
+        pBdr = OxmlElement('w:pBdr')
+        bottom = OxmlElement('w:bottom')
+        bottom.set(qn('w:val'), 'nil')
+        pBdr.append(bottom)
+        pPr.append(pBdr)
+        
+        doc.save(ruta)
+        
+        # Mostrar mensaje con la ruta
+        messagebox.showinfo(
+        "Documento generado",
+        f"El documento se generó correctamente.\n\nRuta:\n{ruta}")
+        
     if ventana_plantilla is None or not ventana_plantilla.winfo_exists():
         # ------ Crear y ajustar ventana ------
         ventana_plantilla = customtkinter.CTkToplevel(app)
@@ -155,6 +202,8 @@ def crearPlantilla():
         ventana_plantilla.focus_force()              # Le da foco inmediatamente
         ventana_plantilla.title("Creando Plantilla") # Cambiar el tituloDoc superior de la ventana   
         ventana_plantilla.resizable(False, False)    # Impide agrandar o achicar la ventana
+        # '%P' significa: "el texto tal cual quedaría si se acepta el cambio"
+        comando_validacion = ventana_plantilla.register(verificar_largo), '%P'
 
         # Ajustes de la ventana
         ancho = 800
@@ -184,7 +233,9 @@ def crearPlantilla():
             ventana_plantilla,
             placeholder_text="Escribir título...",
             width=200,
-            height=35)
+            height=35,
+            validate="key",
+            validatecommand=comando_validacion)
         tituloDoc.place(relx=POS_TITULODOC[0], rely=POS_TITULODOC[1])
 
         textoSubTitulo = crearTexto(ventana_plantilla,
@@ -251,24 +302,14 @@ def crearPlantilla():
             width=200,
             height=35)
         seccion.place(relx=POS_SECCION[0], rely=POS_SECCION[1])
-        
-        def generarDoc():
-            ruta = os.path.join(BASE_DIR, "Documento.docx")
-            doc = Document()
-            doc.save(ruta)
-
-            # Mostrar mensaje con la ruta
-            messagebox.showinfo(
-            "Documento generado",
-            f"El documento se generó correctamente.\n\nRuta:\n{ruta}")
 
         botonGenerarDoc = customtkinter.CTkButton(ventana_plantilla,
-                text="Generar Plantilla",          # Nombre del botón
-                command=generarDoc,                # Función a ejecutar
-                fg_color="#437791",              # Color del botón
-                hover_color="#386379",           # Color sobre el mouse
-                text_color="white",                # Color del texto
-                height=35)                         # Alto del botón
+                text="Generar Plantilla",             # Nombre del botón
+                command=lambda: generarDoc(tituloDoc),# Función a ejecutar
+                fg_color="#437791",                 # Color del botón
+                hover_color="#386379",              # Color sobre el mouse
+                text_color="white",                   # Color del texto
+                height=35)                            # Alto del botón
         botonGenerarDoc.place(relx=POS_GENERARPLANTILLA[0], rely=POS_GENERARPLANTILLA[1])
         
         botonVolver = customtkinter.CTkButton(ventana_plantilla,
