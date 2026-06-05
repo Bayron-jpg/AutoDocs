@@ -135,7 +135,7 @@ def menu():
 def crearPlantilla():
     # --- Posiciones ---
     POS_TITULO = (0.22, 0.06)
-    POS_GENERARPLANTILLA = (0.7, 0.70)
+    POS_GENERARPLANTILLA = (0.67, 0.59)
     POS_VOLVER = (0.41, 0.83)
     POS_TEXTOTITULO = (0.09, 0.20)
     POS_TITULODOC = (0.10, 0.26)
@@ -149,11 +149,15 @@ def crearPlantilla():
     POS_ASIGNATURA = (0.38, 0.41)
     POS_TEXTOSECCION = (0.66, 0.35)
     POS_SECCION = (0.66, 0.41)
+    POS_TEXTOIMAGEN = (0.05, 0.55)
+    POS_BOTONIMAGEN = (0.05, 0.63)
+    POS_LABELIMAGEN = (0.25, 0.63)
 
     global ventana_plantilla
     
     def verificar_largo(texto_futuro, limite):
         return len(texto_futuro) <= limite
+    
     
     def estilo(run, size=14, bold=False):
         run.font.name = "Arial"
@@ -176,7 +180,7 @@ def crearPlantilla():
 
         return p
     
-    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion):
+    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion, botonSeleccionarImagen):
         textoTitulo = tituloDoc.get().strip()
         if not textoTitulo:
             messagebox.showwarning("Campo vacío", "Por favor, escriba un título antes de generar el documento.")
@@ -203,6 +207,18 @@ def crearPlantilla():
                 
         ruta = os.path.join(BASE_DIR, "Documento.docx")
         doc = Document()
+
+        # === ENCABEZADO (Opcional) ===
+        if hasattr(botonSeleccionarImagen, 'imagen_path'):
+            section = doc.sections[0]
+            header = section.header
+            header_paragraph = header.paragraphs[0]
+            run_header = header_paragraph.add_run()
+            run_header.add_picture(botonSeleccionarImagen.imagen_path, width=Inches(2.94))
+            header_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            header_paragraph.paragraph_format.left_indent = 0
+            header_paragraph.paragraph_format.space_before = 0
+            header_paragraph.paragraph_format.space_after = 0
 
         # === Título ===
         titulo = doc.add_heading(textoTitulo, level=0) 
@@ -310,6 +326,7 @@ def crearPlantilla():
         autoDocs = crearTexto(ventana_plantilla, "Crear Plantilla de Documentos", "Consolas", 28)
         autoDocs.place(relx=POS_TITULO[0], rely=POS_TITULO[1])
         
+        # --- Titulo ---
         textoTitulo = crearTexto(ventana_plantilla,
                                  "1. Título del documento",
                                  "Consolas",
@@ -325,6 +342,7 @@ def crearPlantilla():
             validatecommand=cmd_titulo) # Limite 60
         tituloDoc.place(relx=POS_TITULODOC[0], rely=POS_TITULODOC[1])
 
+        # --- Subtitulo ---
         textoSubTitulo = crearTexto(ventana_plantilla,
                                  "2. Subtítulo",
                                  "Consolas",
@@ -340,6 +358,7 @@ def crearPlantilla():
             validatecommand=cmd_subtitulo)  # límite 80
         subtituloDoc.place(relx=POS_SUBTITULODOC[0], rely=POS_SUBTITULODOC[1])
 
+        # --- Estudiantes ---
         textoEstudiantes = crearTexto(ventana_plantilla,
                                  "3. Estudiantes",
                                  "Consolas",
@@ -355,6 +374,7 @@ def crearPlantilla():
             validatecommand=cmd_estudiantes)  # límite 50
         estudiantes.place(relx=POS_ESTUDIANTES[0], rely=POS_ESTUDIANTES[1])
 
+        # --- Profesor ---
         textoProfesor = crearTexto(ventana_plantilla,
                                  "4. Profesor(a)",
                                  "Consolas",
@@ -370,6 +390,7 @@ def crearPlantilla():
             validatecommand=cmd_profesor)  # límite 44
         profesor.place(relx=POS_PROFESOR[0], rely=POS_PROFESOR[1])
 
+        # --- Asignatura ---
         textoAsignatura = crearTexto(ventana_plantilla,
                                  "5. Asignatura",
                                  "Consolas",
@@ -382,9 +403,10 @@ def crearPlantilla():
             width=200,
             height=35,
             validate="key",
-            validatecommand=cmd_asignatura)  # límite 44
+                    validatecommand=cmd_asignatura)  # límite 44
         asignatura.place(relx=POS_ASIGNATURA[0], rely=POS_ASIGNATURA[1])
 
+        # --- Sección ---
         textoSeccion = crearTexto(ventana_plantilla,
                                  "6. Sección",
                                  "Consolas",
@@ -399,14 +421,40 @@ def crearPlantilla():
             validate="key",
             validatecommand=cmd_seccion)  # límite 30
         seccion.place(relx=POS_SECCION[0], rely=POS_SECCION[1])
+        
+        # Encabezado
+        textoImagen = crearTexto(ventana_plantilla, "Seleccionar imagen de encabezado", "Consolas", 16)
+        textoImagen.place(relx=POS_TEXTOIMAGEN[0], rely=POS_TEXTOIMAGEN[1])
+
+        labelImagen = crearTexto(ventana_plantilla, "(Opcional)", "Consolas", 12)
+        labelImagen.place(relx=POS_LABELIMAGEN[0], rely=POS_LABELIMAGEN[1])
+
+        def seleccionarImagen():
+            imagen = filedialog.askopenfilename(
+                title="Seleccionar imagen de encabezado",
+                filetypes=[("Imágenes", "*.png *.jpg *.jpeg")]
+                    )
+            if imagen:
+                labelImagen.configure(text=os.path.basename(imagen))
+                botonSeleccionarImagen.imagen_path = imagen
+
+        botonSeleccionarImagen = customtkinter.CTkButton(ventana_plantilla,
+            text="Seleccionar imagen",
+            command=seleccionarImagen,
+            fg_color=("#cecece","gray"),
+            hover_color=("#c0c0c0","#666666"),
+            text_color=("black","white"),
+            height=35)
+        botonSeleccionarImagen.place(relx=POS_BOTONIMAGEN[0], rely=POS_BOTONIMAGEN[1])
 
         botonGenerarDoc = customtkinter.CTkButton(ventana_plantilla,
                 text="Generar Plantilla",             # Nombre del botón
-                command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion),# Función a ejecutar
+                command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion, botonSeleccionarImagen),# Función a ejecutar
                 fg_color="#437791",                 # Color del botón
                 hover_color="#386379",              # Color sobre el mouse
                 text_color="white",                   # Color del texto
-                height=35)                            # Alto del botón
+                height=55,                            # Alto del botón
+                width=190)                            # Ancho del botón
         botonGenerarDoc.place(relx=POS_GENERARPLANTILLA[0], rely=POS_GENERARPLANTILLA[1])
         
         botonVolver = customtkinter.CTkButton(ventana_plantilla,
