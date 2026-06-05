@@ -176,7 +176,7 @@ def crearPlantilla():
 
         return p
     
-    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura):
+    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion):
         textoTitulo = tituloDoc.get().strip()
         if not textoTitulo:
             messagebox.showwarning("Campo vacío", "Por favor, escriba un título antes de generar el documento.")
@@ -185,17 +185,28 @@ def crearPlantilla():
         textoSubtitulo = subtituloDoc.get().strip()
         
         textoEstudiantes = estudiantes.get().strip()
+        if not textoEstudiantes:
+            messagebox.showwarning("Campo vacío", "Por favor, escriba almenos un estudiante.")
+            return
         
         textoProfesor = profesor.get().strip()
+        if not textoProfesor:
+            messagebox.showwarning("Campo vacío", "Por favor, escriba almenos un profesor(a).")
+            return
         
         textoAsignatura = asignatura.get().strip()
-        
+        if not textoAsignatura:
+            messagebox.showwarning("Campo vacío", "Por favor, escriba almenos una asignatura.")
+            return
+
+        textoSeccion = seccion.get().strip()
+                
         ruta = os.path.join(BASE_DIR, "Documento.docx")
         doc = Document()
 
         # === Título ===
         titulo = doc.add_heading(textoTitulo, level=0) 
-        titulo.paragraph_format.space_before = Pt(150)
+        titulo.paragraph_format.space_before = Pt(120)
         
         run = titulo.runs[0]
         run.font.name = "Arial"
@@ -222,14 +233,29 @@ def crearPlantilla():
             parrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
 
         # === Texto Estudiantes ===
-        agregar_linea(doc, "Estudiantes: ", textoEstudiantes, 200)
+        # Ajusta el espacio antes según el largo del título
+        largo_titulo = len(textoTitulo)
+        if largo_titulo <= 20:
+            espacio = 230
+        elif largo_titulo <= 40:
+            espacio = 180
+        else:
+            espacio = 130
+            
+        if textoSubtitulo:
+            espacio -= 30  # Reduce el espacio si hay subtítulo
+            
+        agregar_linea(doc, "Estudiantes: ", textoEstudiantes, espacio)
         
         # === Texto Profesor(a) ===
         agregar_linea(doc, "Profesor(a): ", textoProfesor)
         
         # === Texto Asignatura ===
         agregar_linea(doc, "Asignatura: ", textoAsignatura)
-
+        
+        # === Texto Sección (opcional)===
+        if textoSeccion:
+            agregar_linea(doc, "Sección: ", textoSeccion)
         
         doc.save(ruta)
         
@@ -262,6 +288,9 @@ def crearPlantilla():
         
         # Para asignatura (límite 44)
         cmd_asignatura = (ventana_plantilla.register(lambda p: verificar_largo(p, 44)), '%P')
+        
+        # Para seccion (límite 30)
+        cmd_seccion = (ventana_plantilla.register(lambda p: verificar_largo(p, 30)), '%P')
 
         # Ajustes de la ventana
         ancho = 800
@@ -366,12 +395,14 @@ def crearPlantilla():
             ventana_plantilla,
             placeholder_text="(Opcional) Ej: 008D",
             width=200,
-            height=35)
+            height=35,
+            validate="key",
+            validatecommand=cmd_seccion)  # límite 30
         seccion.place(relx=POS_SECCION[0], rely=POS_SECCION[1])
 
         botonGenerarDoc = customtkinter.CTkButton(ventana_plantilla,
                 text="Generar Plantilla",             # Nombre del botón
-                command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura),# Función a ejecutar
+                command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion),# Función a ejecutar
                 fg_color="#437791",                 # Color del botón
                 hover_color="#386379",              # Color sobre el mouse
                 text_color="white",                   # Color del texto
