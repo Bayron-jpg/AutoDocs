@@ -155,20 +155,38 @@ def crearPlantilla():
     def verificar_largo(texto_futuro, limite):
         return len(texto_futuro) <= limite
     
-    def estilo(run, size=16, bold=False):
+    def estilo(run, size=14, bold=False):
         run.font.name = "Arial"
         run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
         run.font.size = Pt(size)
         run.font.color.rgb = RGBColor(0, 0, 0)
         run.bold = bold
+        
+    def agregar_linea(doc, etiqueta, valor, espacio_antes=0):
+        p = doc.add_paragraph()
+
+        run1 = p.add_run(etiqueta)
+        estilo(run1, bold=True)
+
+        run2 = p.add_run(valor)
+        estilo(run2)
+
+        p.paragraph_format.space_before = Pt(espacio_antes)
+        p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+
+        return p
     
-    def generarDoc(tituloDoc, subtituloDoc):
+    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor):
         textoTitulo = tituloDoc.get().strip()
         if not textoTitulo:
             messagebox.showwarning("Campo vacío", "Por favor, escriba un título antes de generar el documento.")
             return
         
         textoSubtitulo = subtituloDoc.get().strip()
+        
+        textoEstudiantes = estudiantes.get().strip()
+        
+        textoProfesor = profesor.get().strip()
         
         ruta = os.path.join(BASE_DIR, "Documento.docx")
         doc = Document()
@@ -194,12 +212,19 @@ def crearPlantilla():
         pBdr.append(bottom)
         pPr.append(pBdr)
         
-        # === Subtítulo (Dinámico y Opcional) ===
+        # === Subtítulo (Opcional) ===
         if textoSubtitulo:  # Si escribió algo en la casilla de subtítulo
             parrafo = doc.add_paragraph()
             run_sub = parrafo.add_run(textoSubtitulo)
             estilo(run_sub)
             parrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+        # === Texto Estudiantes ===
+        agregar_linea(doc, "Estudiantes: ", textoEstudiantes, 200)
+        
+        # === Texto Profesor(a) ===
+        agregar_linea(doc, "Profesor(a): ", textoProfesor)
+
         
         doc.save(ruta)
         
@@ -224,8 +249,11 @@ def crearPlantilla():
         # Para subtítulo (límite 125)
         cmd_subtitulo = (ventana_plantilla.register(lambda p: verificar_largo(p, 125)), '%P')
 
-        # Para sección (límite 10)
-        cmd_seccion = (ventana_plantilla.register(lambda p: verificar_largo(p, 10)), '%P')
+        # Para estudiantes (límite 50)
+        cmd_estudiantes = (ventana_plantilla.register(lambda p: verificar_largo(p, 50)), '%P')
+        
+        # Para profesor (límite 44)
+        cmd_profesor = (ventana_plantilla.register(lambda p: verificar_largo(p, 44)), '%P')
 
         # Ajustes de la ventana
         ancho = 800
@@ -285,7 +313,9 @@ def crearPlantilla():
             ventana_plantilla,
             placeholder_text="Ej: Pedro - Juan - Sofía",
             width=200,
-            height=35)
+            height=35,
+            validate="key",
+            validatecommand=cmd_estudiantes)  # límite 50
         estudiantes.place(relx=POS_ESTUDIANTES[0], rely=POS_ESTUDIANTES[1])
 
         textoProfesor = crearTexto(ventana_plantilla,
@@ -298,7 +328,9 @@ def crearPlantilla():
             ventana_plantilla,
             placeholder_text="Nombre del profesor(a)",
             width=200,
-            height=35)
+            height=35,
+            validate="key",
+            validatecommand=cmd_profesor)  # límite 44
         profesor.place(relx=POS_PROFESOR[0], rely=POS_PROFESOR[1])
 
         textoAsignatura = crearTexto(ventana_plantilla,
@@ -329,7 +361,7 @@ def crearPlantilla():
 
         botonGenerarDoc = customtkinter.CTkButton(ventana_plantilla,
                 text="Generar Plantilla",             # Nombre del botón
-                command=lambda: generarDoc(tituloDoc, subtituloDoc),# Función a ejecutar
+                command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor),# Función a ejecutar
                 fg_color="#437791",                 # Color del botón
                 hover_color="#386379",              # Color sobre el mouse
                 text_color="white",                   # Color del texto
