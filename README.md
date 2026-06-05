@@ -31,4 +31,4 @@ Aplicación para automatizar la creación de documentos Word repetitivos.
 - Convertir a PDF
 <img width="800" height="500" alt="3" src="https://github.com/user-attachments/assets/a4957677-dfbc-4b8d-94b3-e4d709f35a6a" />
 
-<img width="800" height="500" alt="4" src="https://github.com/user-attachments/assets/923bff7a-c7d2-4e01-a338-b2046ab018b6" />
+<img width="800" height="500" alt="Sin título (800 x 500 px)" src="https://github.com/user-attachments/assets/7cc08dff-0439-48d3-bf83-cc1127399839" />
