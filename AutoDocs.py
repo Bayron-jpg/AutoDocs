@@ -155,6 +155,27 @@ def crearPlantilla():
     POS_TEXTONOMBREARCHIVO = (0.66, 0.53)
     POS_NOMBREARCHIVO = (0.66, 0.59)
 
+
+    # --- Función para rellenar con datos de prueba ---
+    def rellenarPrueba():
+        tituloDoc.delete(0, "end")        
+        tituloDoc.insert(0, "Informe de Laboratorio N°1")
+    
+        subtituloDoc.delete(0, "end")
+        subtituloDoc.insert(0, "Análisis de Requisitos del Sistema")
+    
+        estudiantes.delete(0, "end")
+        estudiantes.insert(0, "Juan Pérez - María López")
+    
+        profesor.delete(0, "end")
+        profesor.insert(0, "Carlos Ramírez")
+    
+        asignatura.delete(0, "end")
+        asignatura.insert(0, "Fundamentos de Software")
+    
+        seccion.delete(0, "end")
+        seccion.insert(0, "008D")
+    
     global ventana_plantilla
     
     def verificar_largo(texto_futuro, limite):
@@ -226,19 +247,23 @@ def crearPlantilla():
             header_paragraph.paragraph_format.space_before = 0
             header_paragraph.paragraph_format.space_after = 0
 
+        # Eliminar párrafo vacío inicial
+        if doc.paragraphs:
+            p = doc.paragraphs[0]._element
+            p.getparent().remove(p)
+
         # === Título ===
-        titulo = doc.add_heading(textoTitulo, level=0) 
+        titulo = doc.add_heading(textoTitulo, level=0)
         titulo.paragraph_format.space_before = Pt(120)
-        
+        titulo.paragraph_format.space_after = Pt(0)  # Sin espacio después
+
         run = titulo.runs[0]
         run.font.name = "Arial"
         run._element.rPr.rFonts.set(qn('w:eastAsia'), 'Arial')
-        
-        # Tamaño y color del título
         run.font.size = Pt(52)
         run.font.color.rgb = RGBColor(0, 0, 0)
         titulo.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        
+
         # Borrar línea bajo el título
         pPr = titulo._element.get_or_add_pPr()
         pBdr = OxmlElement('w:pBdr')
@@ -246,39 +271,36 @@ def crearPlantilla():
         bottom.set(qn('w:val'), 'nil')
         pBdr.append(bottom)
         pPr.append(pBdr)
-        
+
         # === Subtítulo (Opcional) ===
-        if textoSubtitulo:  # Si escribió algo en la casilla de subtítulo
+        if textoSubtitulo:
             parrafo = doc.add_paragraph()
             run_sub = parrafo.add_run(textoSubtitulo)
             estilo(run_sub)
             parrafo.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            parrafo.paragraph_format.space_before = Pt(0)
+            parrafo.paragraph_format.space_after = Pt(0)
 
-        # === Texto Estudiantes ===
-        # Ajusta el espacio antes según el largo del título
-        largo_titulo = len(textoTitulo)
-        if largo_titulo <= 20:
-            espacio = 230
-        elif largo_titulo <= 40:
-            espacio = 180
-        else:
-            espacio = 130
-            
-        if textoSubtitulo:
-            espacio -= 30  # Reduce el espacio si hay subtítulo
-            
-        agregar_linea(doc, "Estudiantes: ", textoEstudiantes, espacio)
-        
-        # === Texto Profesor(a) ===
-        agregar_linea(doc, "Profesor(a): ", textoProfesor)
-        
-        # === Texto Asignatura ===
-        agregar_linea(doc, "Asignatura: ", textoAsignatura)
-        
-        # === Texto Sección (opcional)===
+        # === Datos (empujados al fondo con espacio) ===
+        lineas = [("Estudiantes: ", textoEstudiantes), ("Profesor(a): ", textoProfesor), ("Asignatura: ", textoAsignatura)]
         if textoSeccion:
-            agregar_linea(doc, "Sección: ", textoSeccion)
-        
+            lineas.append(("Sección: ", textoSeccion))
+
+        # Primera línea con espacio grande para empujar al fondo
+        primera = True
+        for etiqueta, valor in lineas:
+            p = doc.add_paragraph()
+            run1 = p.add_run(etiqueta)
+            estilo(run1, bold=True)
+            run2 = p.add_run(valor)
+            estilo(run2)
+            p.alignment = WD_ALIGN_PARAGRAPH.LEFT
+            if primera:
+                p.paragraph_format.space_before = Pt(270)  # Empuja al fondo
+                primera = False
+            else:
+                p.paragraph_format.space_before = Pt(0)
+
         doc.save(ruta)
         
         # Mostrar mensaje con la ruta
@@ -481,6 +503,16 @@ def crearPlantilla():
                 text_color="white",                # Color del texto
                 height=35)                         # Alto del botón
         botonVolver.place(relx=POS_VOLVER[0], rely=POS_VOLVER[1])
+        
+        # --- Botón datos de prueba (NUEVO) ---
+        botonPrueba = customtkinter.CTkButton(ventana_plantilla,
+            text="Datos de Prueba",        # NUEVO: botón para rellenar campos
+            command=rellenarPrueba,        # NUEVO: llama la función de prueba
+            fg_color=("#cecece", "gray"),  # NUEVO: mismo estilo que botones neutros
+            hover_color=("#c0c0c0", "#666666"), # NUEVO
+            text_color=("black", "white"), # NUEVO
+            height=35)                     # NUEVO
+        botonPrueba.place(relx=0.41, rely=0.75)  # NUEVO: posición debajo del volver
         
     else:
         ventana_plantilla.focus()
