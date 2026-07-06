@@ -155,7 +155,8 @@ def crearPlantilla():
         p.alignment = WD_ALIGN_PARAGRAPH.LEFT
         return p
 
-    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion, botonSeleccionarImagen, nombreArchivo):
+    def generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura,
+                   seccion, botonSeleccionarImagen, nombreArchivo, generarIndice, secciones):
         textoTitulo = tituloDoc.get().strip()
         if not textoTitulo:
             messagebox.showwarning("Campo vacío", "Por favor, escriba un título antes de generar el documento.")
@@ -180,6 +181,7 @@ def crearPlantilla():
         ruta = os.path.join(BASE_DIR, f"{nombre}.docx")
         doc = Document()
 
+        # === ENCABEZADO (Opcional) ===
         if hasattr(botonSeleccionarImagen, 'imagen_path'):
             section = doc.sections[0]
             header = section.header
@@ -191,10 +193,12 @@ def crearPlantilla():
             header_paragraph.paragraph_format.space_before = 0
             header_paragraph.paragraph_format.space_after = 0
 
+        # Eliminar párrafo vacío inicial
         if doc.paragraphs:
             p = doc.paragraphs[0]._element
             p.getparent().remove(p)
 
+        # === Título ===
         titulo = doc.add_heading(textoTitulo, level=0)
         titulo.paragraph_format.space_before = Pt(120)
         titulo.paragraph_format.space_after = Pt(0)
@@ -211,6 +215,7 @@ def crearPlantilla():
         pBdr.append(bottom)
         pPr.append(pBdr)
 
+        # === Subtítulo (Opcional) ===
         if textoSubtitulo:
             parrafo = doc.add_paragraph()
             run_sub = parrafo.add_run(textoSubtitulo)
@@ -219,6 +224,7 @@ def crearPlantilla():
             parrafo.paragraph_format.space_before = Pt(0)
             parrafo.paragraph_format.space_after = Pt(0)
 
+        # === Datos portada ===
         lineas = [("Estudiantes: ", textoEstudiantes), ("Profesor(a): ", textoProfesor), ("Asignatura: ", textoAsignatura)]
         if textoSeccion:
             lineas.append(("Sección: ", textoSeccion))
@@ -236,8 +242,50 @@ def crearPlantilla():
             else:
                 p.paragraph_format.space_before = Pt(0)
 
+        # === ÍNDICE (Opcional) ===
+        if generarIndice.get():
+            doc.add_page_break()
+            titulo_indice = doc.add_heading("Índice", level=1)
+            titulo_indice.alignment = WD_ALIGN_PARAGRAPH.CENTER
+            parrafo = doc.add_paragraph()
+            run = parrafo.add_run()
+            fldChar = OxmlElement('w:fldChar')
+            fldChar.set(qn('w:fldCharType'), 'begin')
+            instrText = OxmlElement('w:instrText')
+            instrText.set(qn('xml:space'), 'preserve')
+            instrText.text = 'TOC \\o "1-3" \\h \\z \\u'
+            fldChar2 = OxmlElement('w:fldChar')
+            fldChar2.set(qn('w:fldCharType'), 'separate')
+            fldChar3 = OxmlElement('w:fldChar')
+            fldChar3.set(qn('w:fldCharType'), 'end')
+            run._r.append(fldChar)
+            run._r.append(instrText)
+            run._r.append(fldChar2)
+            run._r.append(fldChar3)
+
+        # === SECCIONES DINÁMICAS ===
+        for seccion_data in secciones:
+            texto_sec = seccion_data["titulo"].get().strip()
+            if not texto_sec:
+                continue
+            doc.add_page_break()
+            heading = doc.add_heading(texto_sec, level=1)
+            run_h = heading.runs[0]
+            estilo(run_h, size=16, bold=True)
+
+            for entry_sub in seccion_data["subtitulos"]:
+                texto_sub = entry_sub.get().strip()
+                if not texto_sub:
+                    continue
+                sub = doc.add_heading(texto_sub, level=2)
+                run_s = sub.runs[0]
+                estilo(run_s, size=14, bold=False)
+
         doc.save(ruta)
-        messagebox.showinfo("Documento generado", f"El documento se generó correctamente.\n\nRuta:\n{ruta}")
+        messagebox.showinfo("Documento generado",
+            f"El documento se generó correctamente.\n\nRuta:\n{ruta}"
+            + ("\n\n💡 Para actualizar el índice, abra el documento y presione Ctrl+A → F9"
+               if generarIndice.get() else ""))
 
     if ventana_plantilla is None or not ventana_plantilla.winfo_exists():
         # ------ Crear ventana ------
@@ -260,18 +308,17 @@ def crearPlantilla():
         ventana_plantilla.after(200, lambda: ventana_plantilla.iconbitmap(icono))
 
         # --- Validaciones ---
-        cmd_titulo    = (ventana_plantilla.register(lambda p: verificar_largo(p, 60)),  '%P')
-        cmd_subtitulo = (ventana_plantilla.register(lambda p: verificar_largo(p, 125)), '%P')
-        cmd_estudiantes = (ventana_plantilla.register(lambda p: verificar_largo(p, 50)), '%P')
-        cmd_profesor  = (ventana_plantilla.register(lambda p: verificar_largo(p, 44)), '%P')
-        cmd_asignatura = (ventana_plantilla.register(lambda p: verificar_largo(p, 44)), '%P')
-        cmd_seccion   = (ventana_plantilla.register(lambda p: verificar_largo(p, 30)), '%P')
+        cmd_titulo      = (ventana_plantilla.register(lambda p: verificar_largo(p, 60)),  '%P')
+        cmd_subtitulo   = (ventana_plantilla.register(lambda p: verificar_largo(p, 125)), '%P')
+        cmd_estudiantes = (ventana_plantilla.register(lambda p: verificar_largo(p, 50)),  '%P')
+        cmd_profesor    = (ventana_plantilla.register(lambda p: verificar_largo(p, 44)),  '%P')
+        cmd_asignatura  = (ventana_plantilla.register(lambda p: verificar_largo(p, 44)),  '%P')
+        cmd_seccion     = (ventana_plantilla.register(lambda p: verificar_largo(p, 30)),  '%P')
 
         # ==================== FRAME 1 (Portada) ====================
         frame1 = customtkinter.CTkFrame(ventana_plantilla, fg_color="transparent")
         frame1.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        # --- Navegación entre frames ---
         def ir_a_pagina2():
             frame1.place_forget()
             frame2.place(relx=0, rely=0, relwidth=1, relheight=1)
@@ -280,10 +327,8 @@ def crearPlantilla():
             frame2.place_forget()
             frame1.place(relx=0, rely=0, relwidth=1, relheight=1)
 
-        # --- Título frame1 ---
         crearTexto(frame1, "Crear Plantilla de Documento", "Menlo", 28).place(relx=0.27, rely=0.06)
 
-        # --- Campos portada ---
         crearTexto(frame1, "1.Título del documento", "Consolas", 16).place(relx=0.10, rely=0.20)
         tituloDoc = customtkinter.CTkEntry(frame1, placeholder_text="Escribir título...", width=200, height=35, validate="key", validatecommand=cmd_titulo)
         tituloDoc.place(relx=0.10, rely=0.26)
@@ -322,7 +367,6 @@ def crearPlantilla():
             fg_color=("#cecece","gray"), hover_color=("#c0c0c0","#666666"), text_color=("black","white"), height=35)
         botonSeleccionarImagen.place(relx=0.14, rely=0.63)
 
-        # --- Botones frame1 ---
         customtkinter.CTkButton(frame1, text="Volver", command=ventana_plantilla.destroy,
             fg_color="#ba6258", hover_color="#7f342d", text_color="white", height=35).place(relx=0.10, rely=0.83)
 
@@ -334,23 +378,95 @@ def crearPlantilla():
 
         # ==================== FRAME 2 (Contenido + Exportar) ====================
         frame2 = customtkinter.CTkFrame(ventana_plantilla, fg_color="transparent")
-        # frame2 empieza oculto, se muestra al presionar Siguiente
 
-        # --- Título frame2 ---
-        crearTexto(frame2, "Contenido del Documento", "Menlo", 28).place(relx=0.30, rely=0.06)
+        crearTexto(frame2, "Contenido del Documento", "Menlo", 28).place(relx=0.25, rely=0.04)
+
+        # --- Checkbox índice ---
+        generarIndice = customtkinter.CTkCheckBox(frame2,
+            text="Generar índice automático en página 2",
+            font=("Consolas", 13),
+            text_color=("black", "white"))
+        generarIndice.place(relx=0.10, rely=0.17)
 
         # --- Nombre del archivo ---
-        crearTexto(frame2, "Nombre del archivo", "Consolas", 16).place(relx=0.66, rely=0.50)
+        crearTexto(frame2, "Nombre del archivo", "Consolas", 14).place(relx=0.45, rely=0.81)
         nombreArchivo = customtkinter.CTkEntry(frame2, placeholder_text="(Opcional) Ej: Informe N°1", width=200, height=35)
-        nombreArchivo.place(relx=0.66, rely=0.57)
+        nombreArchivo.place(relx=0.45, rely=0.87)
 
-        # --- Botones frame2 ---
+        # --- Secciones dinámicas ---
+        crearTexto(frame2, "Secciones del documento", "Consolas", 14).place(relx=0.10, rely=0.28)
+
+        secciones = []
+
+        scroll_secciones = customtkinter.CTkScrollableFrame(frame2, width=730, height=185)
+        scroll_secciones.place(relx=0.03, rely=0.35)
+
+        def agregar_seccion():
+            idx = len(secciones) + 1
+            frame_sec = customtkinter.CTkFrame(scroll_secciones, fg_color=("#d9d9d9","#3a3a3a"), corner_radius=6)
+            frame_sec.pack(fill="x", padx=5, pady=4)
+
+            customtkinter.CTkLabel(frame_sec, text=f"Sección {idx}:",
+                font=("Consolas", 13), text_color=("black","white")).grid(row=0, column=0, padx=8, pady=6, sticky="w")
+
+            entry_titulo = customtkinter.CTkEntry(frame_sec, placeholder_text="Título de la sección", width=280, height=30)
+            entry_titulo.grid(row=0, column=1, padx=5, pady=6)
+
+            subtitulos = []
+
+            frame_subs = customtkinter.CTkFrame(frame_sec, fg_color="transparent")
+            frame_subs.grid(row=1, column=0, columnspan=4, padx=15, pady=2, sticky="w")
+
+            def agregar_subtitulo():
+                sub_idx = len(subtitulos) + 1
+                frame_sub = customtkinter.CTkFrame(frame_subs, fg_color="transparent")
+                frame_sub.pack(fill="x", pady=1)
+
+                customtkinter.CTkLabel(frame_sub, text=f"  └ Subtítulo {sub_idx}:",
+                    font=("Consolas", 12), text_color=("black","white")).pack(side="left", padx=4)
+
+                entry_sub = customtkinter.CTkEntry(frame_sub, placeholder_text="Subtítulo...", width=220, height=28)
+                entry_sub.pack(side="left", padx=4)
+
+                def eliminar_subtitulo():
+                    subtitulos.remove(entry_sub)
+                    frame_sub.destroy()
+
+                customtkinter.CTkButton(frame_sub, text="✕", width=28, height=28,
+                    fg_color="#ba6258", hover_color="#7f342d", text_color="white",
+                    command=eliminar_subtitulo).pack(side="left", padx=2)
+
+                subtitulos.append(entry_sub)
+
+            def eliminar_seccion():
+                secciones.remove(seccion_data)
+                frame_sec.destroy()
+
+            customtkinter.CTkButton(frame_sec, text="+ Subtítulo", width=110, height=28,
+                fg_color=("#cecece","gray"), hover_color=("#c0c0c0","#666666"),
+                text_color=("black","white"), command=agregar_subtitulo).grid(row=0, column=2, padx=8)
+
+            customtkinter.CTkButton(frame_sec, text="✕ Sección", width=100, height=28,
+                fg_color="#ba6258", hover_color="#7f342d", text_color="white",
+                command=eliminar_seccion).grid(row=0, column=3, padx=4)
+
+            seccion_data = {"titulo": entry_titulo, "subtitulos": subtitulos, "frame": frame_sec}
+            secciones.append(seccion_data)
+
+        customtkinter.CTkButton(frame2, text="+ Agregar Sección",
+            fg_color=("#cecece","gray"), hover_color=("#c0c0c0","#666666"),
+            text_color=("black","white"), height=30, width=160,
+            command=agregar_seccion).place(relx=0.76, rely=0.28)
+
         customtkinter.CTkButton(frame2, text="← Anterior", command=ir_a_pagina1,
-            fg_color=("#cecece","gray"), hover_color=("#c0c0c0","#666666"), text_color=("black","white"), height=35).place(relx=0.10, rely=0.83)
+            fg_color=("#cecece","gray"), hover_color=("#c0c0c0","#666666"),
+            text_color=("black","white"), height=35).place(relx=0.10, rely=0.88)
 
         customtkinter.CTkButton(frame2, text="Generar Plantilla",
-            command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor, asignatura, seccion, botonSeleccionarImagen, nombreArchivo),
-            fg_color="#437791", hover_color="#386379", text_color="white", height=55, width=190).place(relx=0.66, rely=0.75)
+            command=lambda: generarDoc(tituloDoc, subtituloDoc, estudiantes, profesor,
+                asignatura, seccion, botonSeleccionarImagen, nombreArchivo, generarIndice, secciones),
+            fg_color="#437791", hover_color="#386379", text_color="white",
+            height=40, width=170).place(relx=0.74, rely=0.87)
 
         # --- Función datos de prueba ---
         def rellenarPrueba():
