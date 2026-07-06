@@ -275,7 +275,7 @@ def crearPlantilla():
             estilo(run2)
             p.alignment = WD_ALIGN_PARAGRAPH.LEFT
             if primera:
-                p.paragraph_format.space_before = Pt(270)  # Empuja al fondo
+                p.paragraph_format.space_before = Pt(250)  # Empuja al fondo
                 primera = False
             else:
                 p.paragraph_format.space_before = Pt(0)
