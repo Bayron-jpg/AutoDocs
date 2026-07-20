@@ -1,9 +1,16 @@
 import os
 import sys
+# --- FIX: en modo --noconsole/-w, sys.stdout/stderr son None y rompen tqdm (usado por docx2pdf) ---
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w")
 import threading
+import traceback
 import customtkinter
 from tkinter import filedialog, messagebox
 import docx2pdf
+from docx2pdf import convert
 from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Inches
@@ -13,19 +20,22 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 
 # ------------------ Configuración General ------------------
 def obtener_ruta_base():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)  # .exe
-    else:
-        return os.path.dirname(os.path.abspath(__file__))  # .py
-    
+    if getattr(sys, "frozen", False):
+        return os.path.dirname(sys.executable)
+    return os.path.dirname(os.path.abspath(__file__))
+
+def resource_path(relative_path):
+    try:
+        base_path = sys._MEIPASS
+    except AttributeError:
+        base_path = obtener_ruta_base()
+
+    return os.path.join(base_path, relative_path)
+
 BASE_DIR = obtener_ruta_base()
+ICON_LIGHT = resource_path("Iconos/AutoDocsLight.ico")
+ICON_DARK = resource_path("Iconos/AutoDocsDark.ico")
 app = customtkinter.CTk()  # Crear ventana vacía
-ICON_LIGHT = os.path.join(
-    BASE_DIR, "Iconos", "AutoDocsLight.ico"
-)  # Icono con fondo blanco
-ICON_DARK = os.path.join(
-    BASE_DIR, "Iconos", "AutoDocsDark.ico"
-)  # Icono con fondo negro
 ventana_acerca = None
 ventana_plantilla = None
 ventana_pdf = None
@@ -373,7 +383,7 @@ def crearPlantilla():
             try:
                 os.startfile(ruta)
             except Exception as e:
-                messagebox.showerror("Error", f"No se pudo abrir el archivo:\n{e}")
+                messagebox.showerror("Error", f"No se pudo convertir:\n{repr(e)}\n\n{traceback.format_exc()}")
 
     if ventana_plantilla is None or not ventana_plantilla.winfo_exists():
         # ------ Crear ventana ------
@@ -830,12 +840,17 @@ def convertirPdf():
             botonSeleccionar.configure(state="disabled")
 
             def proceso():
+                import pythoncom
+                pythoncom.CoInitialize()
                 try:
                     docx2pdf.convert(archivo)
                     ruta_pdf = os.path.splitext(archivo)[0] + ".pdf"
                     ventana_pdf.after(0, lambda: exito(ruta_pdf))
                 except Exception as e:
-                    ventana_pdf.after(0, lambda: error(str(e)))
+                    traceback.print_exc()  # Imprime el error completo en la consola
+                    ventana_pdf.after(0, lambda: error(repr(e)))
+                finally:
+                    pythoncom.CoUninitialize()
 
             def exito(ruta):
                 botonConvertir.configure(
