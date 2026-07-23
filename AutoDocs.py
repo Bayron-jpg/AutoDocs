@@ -9,9 +9,8 @@ import threading
 import traceback
 import customtkinter
 from tkinter import filedialog, messagebox
-import docx2pdf
 from pdf2docx import Converter
-from docx2pdf import convert
+import docx2pdf
 from docx import Document
 from docx.oxml.ns import qn
 from docx.shared import Inches
