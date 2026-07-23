@@ -10,6 +10,7 @@ import traceback
 import customtkinter
 from tkinter import filedialog, messagebox
 import docx2pdf
+from pdf2docx import Converter
 from docx2pdf import convert
 from docx import Document
 from docx.oxml.ns import qn
@@ -39,6 +40,7 @@ app = customtkinter.CTk()  # Crear ventana vacía
 ventana_acerca = None
 ventana_plantilla = None
 ventana_pdf = None
+ventana_word = None
 
 # ------------------ Funciones ------------------
 def crearTexto(app, contenido, letra, tamano):
@@ -79,7 +81,7 @@ def menu():
     # Inicializar ventana
     customtkinter.set_appearance_mode("Dark")
     app.iconbitmap(ICON_DARK)  # Cambiar icono
-    app.title("AutoDocs (1.0.0)")  # Cambiar el tituloDoc superior de la ventana
+    app.title("AutoDocs  |  Herramientas para documentos")  # Cambiar el tituloDoc superior de la ventana
 
     # Ajustes de la ventana
     ancho = 800
@@ -95,8 +97,9 @@ def menu():
     POS_TEMA = (0.03, 0.05)
     POS_SALIR = (0.62, 0.76)
     POS_ACERCA = (0.20, 0.76)
-    POS_CREAR = (0.12, 0.45)
-    POS_CONVERTIR = (0.54, 0.45)
+    POS_CREAR = (0.04, 0.43)
+    POS_CONVERTIR = (0.36, 0.43)
+    POS_CONVERTIRWORD = (0.68, 0.43)
 
     # Ajustes del Tema (Modo Claro-Oscuro)
     cambiarTema = customtkinter.CTkButton(
@@ -121,7 +124,7 @@ def menu():
         fg_color="#2980b9",  # Color del botón
         hover_color="#1a6a9a",  # Color sobre el mouse
         text_color=("#f0f0f0", "white"),  # Color del texto
-        width=270,  # Ancho del botón
+        width=220,  # Ancho del botón
         height=110,  # Alto del botón
         font=("Menlo", 24),
     )  # Tipo de letra y tamaño del texto
@@ -135,11 +138,25 @@ def menu():
         fg_color="#e05a2b",  # Color del botón
         hover_color="#84371B",  # Color sobre el mouse
         text_color=("#f0f0f0", "white"),  # Color del texto
-        width=270,  # Ancho del botón
+        width=220,  # Ancho del botón
         height=110,  # Alto del botón
         font=("Menlo", 24),
     )  # Tipo de letra y tamaño del texto
     botonConvertir.place(relx=POS_CONVERTIR[0], rely=POS_CONVERTIR[1])
+    
+    # Botón Convertir a Word
+    botonConvertirWord = customtkinter.CTkButton(
+        app,
+        text="Convertir a Word",  # Texto del botón
+        command=convertirWord,  # Función a realizar
+        fg_color="#0833A2",  # Color del botón
+        hover_color="#052574",  # Color sobre el mouse
+        text_color=("#f0f0f0", "white"),  # Color del texto
+        width=220,  # Ancho del botón
+        height=110,  # Alto del botón
+        font=("Menlo", 24),
+    )  # Tipo de letra y tamaño del texto
+    botonConvertirWord.place(relx=POS_CONVERTIRWORD[0], rely=POS_CONVERTIRWORD[1])
 
     # Botón Acerca De
     botonAcercaDe = customtkinter.CTkButton(
@@ -391,7 +408,7 @@ def crearPlantilla():
         ventana_plantilla.transient(app)
         ventana_plantilla.grab_set()
         ventana_plantilla.focus_force()
-        ventana_plantilla.title("Creando Plantilla")
+        ventana_plantilla.title("AutoDocs  |  Creando Plantilla")
         ventana_plantilla.resizable(False, False)
 
         ancho = 800
@@ -761,12 +778,12 @@ def crearPlantilla():
 
 def convertirPdf():
     # --- Posiciones ---
-    POS_TITULODOC = (0.18, 0.09)
-    POS_ARCHIVO = (0.40, 0.44)
-    POS_SELECCIONAR = (0.19, 0.43)
-    POS_VOLVER = (0.41, 0.83)
-    POS_CONVERTIR = (0.41, 0.56)
-    POS_TEXTOARCHIVO = (0.19, 0.34)
+    POS_TITULODOC = (0.19, 0.10)
+    POS_TEXTOARCHIVO = (0.194, 0.19)
+    POS_ARCHIVO = (0.33, 0.47)
+    POS_SELECCIONAR = (0.06, 0.46)
+    POS_CONVERTIR = (0.33, 0.81)
+    POS_VOLVER = (0.06, 0.81)
 
     global ventana_pdf
 
@@ -777,13 +794,13 @@ def convertirPdf():
         ventana_pdf.grab_set()  # Impide interactuar con la principal
         ventana_pdf.focus_force()  # Le da foco inmediatamente
         ventana_pdf.title(
-            "Convertir Documento Word a PDF"
+            "AutoDocs  |  Convertir de Word a PDF"
         )  # Cambiar el tituloDoc superior de la ventana
         ventana_pdf.resizable(False, False)  # Impide agrandar o achicar la ventana
 
         # Ajustes de la ventana
-        ancho = 800
-        alto = 500
+        ancho = 600
+        alto = 380
         x = app.winfo_x() + (app.winfo_width() - ancho) // 2
         y = app.winfo_y() + (app.winfo_height() - alto) // 2
         ventana_pdf.geometry(f"{ancho}x{alto}+{x}+{y}")
@@ -802,15 +819,18 @@ def convertirPdf():
             200, lambda: ventana_pdf.iconbitmap(icono)
         )  # Espera 200ms para cambiar el icono
 
+        iconoTexto = crearTextoColor(ventana_pdf, "📄", "Arial", 46, "#ba6258")
+        iconoTexto.place(relx=0.06, rely=0.10)
+
         # --- Título ---
         tituloDoc = crearTexto(
-            ventana_pdf, "Convertir Documento Word a PDF", "Menlo", 34
+            ventana_pdf, "Convertir Word a PDF", "Menlo", 28
         )
         tituloDoc.place(relx=POS_TITULODOC[0], rely=POS_TITULODOC[1])
 
         # -- Texto seleccion de archivo ---
         textoArchivo = crearTexto(
-            ventana_pdf, "Seleccionar archivo PDF a convertir", "Consolas", 16
+            ventana_pdf, "Selecciona un documento .docx para exportarlo como PDF", "Menlo", 15
         )
         textoArchivo.place(relx=POS_TEXTOARCHIVO[0], rely=POS_TEXTOARCHIVO[1])
 
@@ -896,10 +916,11 @@ def convertirPdf():
             ventana_pdf,
             text="Convertir a PDF",
             command=convertir,
-            fg_color="#437791",
-            hover_color="#386379",
+            fg_color="#2E856B",
+            hover_color="#184739",
             text_color="white",
-            height=35,
+            height=40,
+            width=368,
             state="disabled",
         )
         botonConvertir.place(relx=POS_CONVERTIR[0], rely=POS_CONVERTIR[1])
@@ -911,12 +932,152 @@ def convertirPdf():
             fg_color="#ba6258",  # Color del botón
             hover_color="#7f342d",  # Color sobre el mouse
             text_color="white",  # Color del texto
-            height=35,
+            height=40,
         )  # Alto del botón
         botonVolver.place(relx=POS_VOLVER[0], rely=POS_VOLVER[1])
 
     else:
         ventana_pdf.focus()
+
+def convertirWord():
+    # --- Posiciones ---
+    POS_TITULODOC = (0.19, 0.10)
+    POS_TEXTOARCHIVO = (0.194, 0.19)
+    POS_ARCHIVO = (0.33, 0.47)
+    POS_SELECCIONAR = (0.06, 0.46)
+    POS_CONVERTIR = (0.33, 0.81)
+    POS_VOLVER = (0.06, 0.81)
+
+
+    global ventana_word
+
+    if ventana_word is None or not ventana_word.winfo_exists():
+        ventana_word = customtkinter.CTkToplevel(app)
+        ventana_word.transient(app)
+        ventana_word.grab_set()
+        ventana_word.focus_force()
+        ventana_word.title("AutoDocs  |  Convertir de PDF a Word")
+        ventana_word.resizable(False, False)
+
+        ancho = 600
+        alto = 380
+        x = app.winfo_x() + (app.winfo_width() - ancho) // 2
+        y = app.winfo_y() + (app.winfo_height() - alto) // 2
+        ventana_word.geometry(f"{ancho}x{alto}+{x}+{y}")
+
+        ventana_word.update_idletasks()
+        ventana_word.bind("<Escape>", lambda e: ventana_word.destroy())
+
+        icono = (
+            ICON_DARK if customtkinter.get_appearance_mode() == "Dark" else ICON_LIGHT
+        )
+        ventana_word.after(200, lambda: ventana_word.iconbitmap(icono))
+
+        iconoTexto = crearTextoColor(ventana_word, "📄", "Arial", 46, "#4552C4")
+        iconoTexto.place(relx=0.06, rely=0.10)
+        
+        tituloDoc = crearTexto(
+            ventana_word, "Convertir PDF a Word", "Menlo", 28
+        )
+        tituloDoc.place(relx=POS_TITULODOC[0], rely=POS_TITULODOC[1])
+
+        textoArchivo = crearTexto(
+            ventana_word, "Selecciona un documento .pdf para exportarlo como Word", "Menlo", 15
+        )
+        textoArchivo.place(relx=POS_TEXTOARCHIVO[0], rely=POS_TEXTOARCHIVO[1])
+
+        archivoSeleccionado = crearTexto(
+            ventana_word, "Ningún archivo seleccionado", "Consolas", 12
+        )
+        archivoSeleccionado.place(relx=POS_ARCHIVO[0], rely=POS_ARCHIVO[1])
+
+        def seleccionarArchivo():
+            archivo = filedialog.askopenfilename(
+                title="Seleccionar documento PDF",
+                filetypes=[("Documentos PDF", "*.pdf")],
+            )
+            if archivo:
+                archivoSeleccionado.configure(text=os.path.basename(archivo))
+                botonConvertir.configure(state="normal")
+                botonConvertir.archivo_path = archivo
+
+        def convertir():
+            archivo = botonConvertir.archivo_path
+
+            botonConvertir.configure(state="disabled", text="Convirtiendo...")
+            botonSeleccionar.configure(state="disabled")
+
+            def proceso():
+                try:
+                    ruta_docx = os.path.splitext(archivo)[0] + ".docx"
+                    cv = Converter(archivo)
+                    cv.convert(ruta_docx)
+                    cv.close()
+                    ventana_word.after(0, lambda: exito(ruta_docx))
+                except Exception as e:
+                    traceback.print_exc()
+                    ventana_word.after(0, lambda: error(repr(e)))
+
+            def exito(ruta):
+                botonConvertir.configure(state="disabled", text="Convertir a Word")
+                botonSeleccionar.configure(state="normal")
+                archivoSeleccionado.configure(text="Ningún archivo seleccionado")
+                deseaAbrir = messagebox.askyesno(
+                    "Word generado satisfactoriamente",
+                    f"Documento Word generado correctamente.\n\nGuardado en:\n{ruta}\n\n¿Desea abrir el archivo?",
+                )
+                if deseaAbrir:
+                    try:
+                        os.startfile(ruta)
+                    except Exception as e:
+                        messagebox.showerror(
+                            "Error", f"No se pudo abrir el archivo:\n{repr(e)}"
+                        )
+
+            def error(e):
+                botonConvertir.configure(state="normal", text="Convertir a Word")
+                botonSeleccionar.configure(state="normal")
+                messagebox.showerror("Error", f"No se pudo convertir:\n{e}")
+
+            threading.Thread(target=proceso, daemon=True).start()
+
+        botonSeleccionar = customtkinter.CTkButton(
+            ventana_word,
+            text="Seleccionar archivo",
+            command=seleccionarArchivo,
+            fg_color=("#cecece", "gray"),
+            hover_color=("#c0c0c0", "#666666"),
+            text_color=("black", "white"),
+            height=35,
+        )
+        botonSeleccionar.place(relx=POS_SELECCIONAR[0], rely=POS_SELECCIONAR[1])
+
+        botonConvertir = customtkinter.CTkButton(
+            ventana_word,
+            text="Convertir a Word",
+            command=convertir,
+            fg_color="#2E856B",
+            hover_color="#184739",
+            text_color="white",
+            height=40,
+            width= 368,
+            state="disabled",
+        )
+        botonConvertir.place(relx=POS_CONVERTIR[0], rely=POS_CONVERTIR[1])
+
+        botonVolver = customtkinter.CTkButton(
+            ventana_word,
+            text="Volver",
+            command=ventana_word.destroy,
+            fg_color="#ba6258",
+            hover_color="#7f342d",
+            text_color="white",
+            height=40,
+        )
+        botonVolver.place(relx=POS_VOLVER[0], rely=POS_VOLVER[1])
+
+    else:
+        ventana_word.focus()
 
 def acercaDe():
     # --- Posiciones ---
