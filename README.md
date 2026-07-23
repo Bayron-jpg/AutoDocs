@@ -41,13 +41,19 @@ Descargar la versión portable de [AutoDocs](https://github.com/Bayron-jpg/AutoD
 
 ## Screenshots / Preview
 - Menú
-<img width="793" height="524" alt="image" src="https://github.com/user-attachments/assets/9ed01152-29a3-4641-8177-cda0a0f3a62f" />
+<img width="797" height="522" alt="image" src="https://github.com/user-attachments/assets/5d37c783-a0fa-41b4-9a8f-abdb0a69a2f2" />
 
 - Convertir a PDF
-<img width="796" height="524" alt="image" src="https://github.com/user-attachments/assets/b1a20a23-a5e4-4ed4-87f3-10259fc18f54" />
+<img width="597" height="403" alt="image" src="https://github.com/user-attachments/assets/502c968d-441a-427d-9f4f-3eddc14872dd" />
 
 - Convertir a PDF (Éxito)
-<img width="799" height="531" alt="image" src="https://github.com/user-attachments/assets/9d3a4225-c415-4f50-a5a9-902267185077" />
+<img width="600" height="405" alt="image" src="https://github.com/user-attachments/assets/0fcc1654-60a0-48fc-b40c-cc7f41723802" />
+
+- Convertir a Word
+<img width="594" height="405" alt="image" src="https://github.com/user-attachments/assets/921ba1b6-12bf-4139-94fb-a2e16c22abe0" />
+
+- Convertir a Word (Éxito)
+<img width="593" height="402" alt="image" src="https://github.com/user-attachments/assets/e15aaab4-af63-422c-ba70-a58c9ad7296f" />
 
 - Crear Plantilla Word (Parte 1)
 <img width="798" height="527" alt="image" src="https://github.com/user-attachments/assets/85330396-9eef-4331-a2fa-d69e3bf34a70" />
